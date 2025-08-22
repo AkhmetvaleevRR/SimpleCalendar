@@ -2,6 +2,8 @@
   <div id="app">
     <h1>Vue Calendar</h1>    
     <Calendar 
+      :initial-date="initialDate"
+      @select-date="handleDateSelect"
     />    
     <div v-if="selectedDate" class="selected-date">
       <p>Selected date: {{ selectedDate }}</p>
@@ -11,6 +13,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import Calendar from './components/Calendar.vue'
 
 const initialDate = ref<string>('2025-08-21')
 const selectedDate = ref<string | null>(null)
