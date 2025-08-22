@@ -5,7 +5,7 @@
         <img src="../assets/prev_icon.svg" width="32px">
       </button>
 
-      <h2>{{ MONTHS[currentMonth] }} {{ currentYear }}</h2>
+      <h2>{{ currentMonthName }} {{ currentYear }}</h2>
 
       <button @click="nextMonth" class="nav-button">
         <img src="../assets/next_icon.svg" width="32px">        
@@ -28,11 +28,11 @@
         :class="['day', 
           {
             'empty': !day,
-            'today': day,
-            'selected': day,
+            'today': isToday(day),
+            'selected': isSelected(day),
           }
         ]"
-        @click="$emit('select-date', day!.toString())"
+        @click="selectDate(day!)"
       >
         {{ day ? day.getDate() : '' }}
       </div>
@@ -42,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
 interface CalendarProps {
   initialDate?: string | null
@@ -54,31 +54,99 @@ const props = withDefaults(defineProps<CalendarProps>(), {
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const TODAY = new Date()
 
-const prevMonth = () => {
-  console.log('prevMonth')
-}
-
-const nextMonth = () => {
-  console.log('nextMonth')
-}
-const currentDate = ref<Date>(new Date())
+const currentDate = ref<Date>(TODAY)
 const currentMonth = ref<number>(0)
 const currentYear = ref<number>(0)
 const selectedDate = ref<Date | null>(null)
 
-const calendarDays = computed(() => {
+const emit = defineEmits<{
+  (e: 'select-date', date: string): void
+}>()
+
+const currentMonthName = computed<string>(() => {
+  return MONTHS[currentMonth.value]
+})
+
+const calendarDays = computed<(Date | null)[]>(() => {
   const days: (Date | null)[] = []
-  const monthLength = 30;
-  for (let i = 0; i < monthLength; i ++) {
-    days.push(new Date)
+  const firstDayOfMonth = new Date(currentYear.value, currentMonth.value, 1)
+  const lastDayOfMonth = new Date(currentYear.value, currentMonth.value + 1, 0)
+  
+  const firstDayWeekday = firstDayOfMonth.getDay()
+  for (let i = 0; i < firstDayWeekday; i++) {
+    days.push(null)
   }
+
+  for (let i = 1; i <= lastDayOfMonth.getDate(); i++) {
+    days.push(new Date(currentYear.value, currentMonth.value, i))
+  }
+
   return days
 })
 
-defineEmits<{
-  (e: 'select-date', date: string): void
-}>()
+console.log(calendarDays)
+
+const getInitialDate = (): void => {
+  let initialDate: Date
+  
+  if (props.initialDate) {
+    const [year, month, day] = props.initialDate.split('-').map(Number)
+    initialDate = new Date(year, month - 1, day)
+  } else {
+    initialDate = TODAY
+  }
+
+  currentDate.value = initialDate
+  currentMonth.value = initialDate.getMonth()
+  currentYear.value = initialDate.getFullYear()
+  selectedDate.value = initialDate  
+  emit('select-date', formatDate(initialDate))
+}
+
+const prevMonth = () => {
+  if (currentMonth.value === 0) {
+    currentMonth.value = 11
+    currentYear.value--
+  } else {
+    currentMonth.value--
+  }
+}
+
+const nextMonth = () => {
+  if (currentMonth.value === 11) {
+    currentMonth.value = 0
+    currentYear.value++
+  } else {
+    currentMonth.value++
+  }
+}
+
+const isToday = (date: Date | null): boolean => {
+  if (!date) return false
+  TODAY.setHours(0,0,0,0)
+  return date.getTime() === TODAY.getTime();
+}
+
+const isSelected = (date: Date | null): boolean => {
+  if (!date || !selectedDate.value) return false
+  return selectedDate.value.getTime() === date.getTime()
+}
+
+const formatDate = (date: Date): string => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1)
+  const day = String(date.getDate())
+  return `${year}-${month}-${day}`
+}
+
+const selectDate = (day: Date) => {
+  emit('select-date', formatDate(day))
+  selectedDate.value = day
+}
+
+onMounted(getInitialDate)
 </script>
 
 <style scoped>
