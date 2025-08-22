@@ -86,8 +86,6 @@ const calendarDays = computed<(Date | null)[]>(() => {
   return days
 })
 
-console.log(calendarDays)
-
 const getInitialDate = (): void => {
   let initialDate: Date
   
